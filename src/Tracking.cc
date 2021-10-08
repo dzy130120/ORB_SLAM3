@@ -1784,7 +1784,7 @@ void Tracking::Track()
 #endif
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
-        if(!mbOnlyTracking)
+        if(!mbOnlyTracking)//定位加跟踪
         {
 
             // State OK
@@ -1794,30 +1794,33 @@ void Tracking::Track()
             {
 
                 // Local Mapping might have changed some MapPoints tracked in last frame
+                //上一次跟踪的地图点可能已经发生变化
                 CheckReplacedInLastFrame();
 
                 if((mVelocity.empty() && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     //Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
+                    //运动模型为空且imu也没有初始化，或距离上次重定位的帧小于两帧（刚刚重定位）,使用与参考帧匹配计算运动
                     bOK = TrackReferenceKeyFrame();
                 }
                 else
                 {
                     //Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
+                    //使用运动模型预测位姿
                     bOK = TrackWithMotionModel();
-                    if(!bOK)
+                    if(!bOK)//如果运动模型预测失败则使用参考帧匹配预测
                         bOK = TrackReferenceKeyFrame();
                 }
 
 
                 if (!bOK)
                 {
-                    if ( mCurrentFrame.mnId<=(mnLastRelocFrameId+mnFramesToResetIMU) &&
+                    if ( mCurrentFrame.mnId<=(mnLastRelocFrameId+mnFramesToResetIMU) &&//当前帧id小于重定位的id加上复位imu后的帧数量，前端lost
                          (mSensor==System::IMU_MONOCULAR || mSensor==System::IMU_STEREO))
                     {
                         mState = LOST;
                     }
-                    else if(pCurrentMap->KeyFramesInMap()>10)
+                    else if(pCurrentMap->KeyFramesInMap()>10)//刚刚丢失
                     {
                         cout << "KF in map: " << pCurrentMap->KeyFramesInMap() << endl;
                         mState = RECENTLY_LOST;
@@ -1833,30 +1836,30 @@ void Tracking::Track()
             else
             {
 
-                if (mState == RECENTLY_LOST)
+                if (mState == RECENTLY_LOST)//刚刚丢失
                 {
                     Verbose::PrintMess("Lost for a short time", Verbose::VERBOSITY_NORMAL);
 
                     bOK = true;
                     if((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO))
                     {
-                        if(pCurrentMap->isImuInitialized())
+                        if(pCurrentMap->isImuInitialized())//刚刚丢失时使用imu跟踪状态
                             PredictStateIMU();
                         else
                             bOK = false;
 
-                        if (mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost)
+                        if (mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost)//如果丢失时间超时则状态变为丢失
                         {
                             mState = LOST;
                             Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
                             bOK=false;
                         }
                     }
-                    else
+                    else//如果没有IMU则直接进行重定位
                     {
                         // TODO fix relocalization
                         bOK = Relocalization();
-                        if(!bOK && mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost_visual)
+                        if(!bOK && mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost_visual)//如果重定位失败超时，状态切换为丢失
                         {
                             mState = LOST;
                             Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
@@ -1869,14 +1872,14 @@ void Tracking::Track()
 
                     Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
 
-                    if (pCurrentMap->KeyFramesInMap()<10)
+                    if (pCurrentMap->KeyFramesInMap()<10)//当前地图关键帧小于10个，重新复位当前地图
                     {
                         mpSystem->ResetActiveMap();
                         cout << "Reseting current map..." << endl;
                     }else
-                        CreateMapInAtlas();
+                        CreateMapInAtlas();//在地图栈中新建地图，不用原来的了
 
-                    if(mpLastKeyFrame)
+                    if(mpLastKeyFrame)//由于上述两种方式都重置了地图，所以需要把刚才缓存的关键帧清空
                         mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
 
                     Verbose::PrintMess("done", Verbose::VERBOSITY_NORMAL);
@@ -1886,7 +1889,7 @@ void Tracking::Track()
             }
 
         }
-        else
+        else//定位模式
         {
             // Localization Mode: Local Mapping is deactivated (TODO Not available in inertial mode)
             if(mState==LOST)
@@ -1897,7 +1900,7 @@ void Tracking::Track()
             }
             else
             {
-                if(!mbVO)
+                if(!mbVO)//参看变量定义处注释
                 {
                     // In last frame we tracked enough MapPoints in the map
                     if(!mVelocity.empty())
