@@ -31,7 +31,6 @@ cv::Mat NormalizeRotation(const cv::Mat &R)
 {
     cv::Mat U,w,Vt;
     cv::SVDecomp(R,w,U,Vt,cv::SVD::FULL_UV);
-    // assert(cv::determinant(U*Vt)>0);
     return U*Vt;
 }
 
@@ -161,19 +160,19 @@ IntegratedRotation::IntegratedRotation(const cv::Point3f &angVel, const Bias &im
 
     const float d2 = x*x+y*y+z*z;
     const float d = sqrt(d2);
-
+    //反对称矩阵
     cv::Mat W = (cv::Mat_<float>(3,3) << 0, -z, y,
                  z, 0, -x,
                  -y,  x, 0);
-    if(d<eps)
+    if(d<eps)//判断微小量，如果是直接近似
     {
         deltaR = I + W;
-        rightJ = cv::Mat::eye(3,3,CV_32F);
+        rightJ = cv::Mat::eye(3,3,CV_32F);//右雅克比
     }
     else
     {
-        deltaR = I + W*sin(d)/d + W*W*(1.0f-cos(d))/d2;
-        rightJ = I - W*(1.0f-cos(d))/d2 + W*W*(d-sin(d))/(d2*d);
+        deltaR = I + W*sin(d)/d + W*W*(1.0f-cos(d))/d2;//罗德里格斯
+        rightJ = I - W*(1.0f-cos(d))/d2 + W*W*(d-sin(d))/(d2*d);//右雅克比公式代入
     }
 }
 
@@ -277,7 +276,8 @@ void Preintegrated::IntegrateNewMeasurement(const cv::Point3f &acceleration, con
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat Wacc = (cv::Mat_<float>(3,3) << 0, -acc.at<float>(2), acc.at<float>(1),
                                                    acc.at<float>(2), 0, -acc.at<float>(0),
-                                                   -acc.at<float>(1), acc.at<float>(0), 0);
+                                                   -acc.at<float>(1), acc.at<float>(0), 0);//加速度的反对称矩阵
+    //q,v,p
     A.rowRange(3,6).colRange(0,3) = -dR*dt*Wacc;
     A.rowRange(6,9).colRange(0,3) = -0.5f*dR*dt*dt*Wacc;
     A.rowRange(6,9).colRange(3,6) = cv::Mat::eye(3,3,CV_32F)*dt;

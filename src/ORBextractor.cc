@@ -764,7 +764,7 @@ namespace ORB_SLAM3
     {
         allKeypoints.resize(nlevels);
 
-        const float W = 30;
+        const float W = 35;
 
         for (int level = 0; level < nlevels; ++level)
         {
@@ -805,8 +805,7 @@ namespace ORB_SLAM3
 
                     vector<cv::KeyPoint> vKeysCell;
 
-                    FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
-                         vKeysCell,iniThFAST,true);
+                    FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),  vKeysCell,iniThFAST,true);
 
                     /*if(bRight && j <= 13){
                         FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),

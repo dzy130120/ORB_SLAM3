@@ -40,7 +40,8 @@ namespace IMU
 const float GRAVITY_VALUE=9.81;
 
 //IMU measurement (gyro, accelerometer and timestamp)
-class Point
+//imu数据点
+class Point//imu数据点
 {
 public:
     Point(const float &acc_x, const float &acc_y, const float &acc_z,
@@ -55,6 +56,7 @@ public:
 };
 
 //IMU biases (gyro and accelerometer)
+//IMU 偏置
 class Bias
 {
     friend class boost::serialization::access;
@@ -84,6 +86,7 @@ public:
 };
 
 //IMU calibration (Tbc, Tcb, noise)
+//IMU与camera外参
 class Calib
 {
     template<class Archive>
@@ -139,6 +142,7 @@ public:
 };
 
 //Integration of 1 gyro measurement
+//角速度积分
 class IntegratedRotation
 {
 public:
@@ -207,16 +211,16 @@ class Preintegrated
     }
 
 public:
-    Preintegrated(const Bias &b_, const Calib &calib);
-    Preintegrated(Preintegrated* pImuPre);
-    Preintegrated() {}
-    ~Preintegrated() {}
+    Preintegrated(const Bias &b_, const Calib &calib);//构造
+    Preintegrated(Preintegrated* pImuPre);//拷贝构造
+    Preintegrated() {}//默认构造
+    ~Preintegrated() {}//析构
     void CopyFrom(Preintegrated* pImuPre);
     void Initialize(const Bias &b_);
     void IntegrateNewMeasurement(const cv::Point3f &acceleration, const cv::Point3f &angVel, const float &dt);
     void Reintegrate();
     void MergePrevious(Preintegrated* pPrev);
-    void SetNewBias(const Bias &bu_);
+    void SetNewBias(const Bias &bu_);//设置新的bias
     IMU::Bias GetDeltaBias(const Bias &b_);
     cv::Mat GetDeltaRotation(const Bias &b_);
     cv::Mat GetDeltaVelocity(const Bias &b_);
@@ -234,24 +238,24 @@ public:
 
 public:
     float dT;
-    cv::Mat C;
-    cv::Mat Info;
-    cv::Mat Nga, NgaWalk;
+    cv::Mat C; //协方差矩阵
+    cv::Mat Info;//信息矩阵
+    cv::Mat Nga, NgaWalk;//噪声、随机游走
 
     // Values for the original bias (when integration was computed)
-    Bias b;
-    cv::Mat dR, dV, dP;
+    Bias b;//更新前bias
+    cv::Mat dR, dV, dP;//预积分
     cv::Mat JRg, JVg, JVa, JPg, JPa;
-    cv::Mat avgA;
-    cv::Mat avgW;
+    cv::Mat avgA;//平均加速度
+    cv::Mat avgW;//平均角速度
 
 
 private:
     // Updated bias
-    Bias bu;
+    Bias bu;//更新后bias
     // Dif between original and updated bias
     // This is used to compute the updated values of the preintegration
-    cv::Mat db;
+    cv::Mat db;//bias更新前后的变化量
 
     struct integrable
     {
@@ -261,7 +265,7 @@ private:
         float t;
     };
 
-    std::vector<integrable> mvMeasurements;
+    std::vector<integrable> mvMeasurements;//imu多组读数
 
     std::mutex mMutex;
 };
