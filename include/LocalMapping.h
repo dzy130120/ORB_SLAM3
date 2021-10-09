@@ -132,10 +132,10 @@ protected:
     void MapPointCulling();
     void SearchInNeighbors();
     void KeyFrameCulling();
-
+    //计算基础矩阵
     cv::Mat ComputeF12(KeyFrame* &pKF1, KeyFrame* &pKF2);
     cv::Matx33f ComputeF12_(KeyFrame* &pKF1, KeyFrame* &pKF2);
-
+    //反对称矩阵
     cv::Mat SkewSymmetricMatrix(const cv::Mat &v);
     cv::Matx33f SkewSymmetricMatrix_(const cv::Matx31f &v);
 

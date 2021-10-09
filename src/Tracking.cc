@@ -1976,11 +1976,11 @@ void Tracking::Track()
         std::chrono::steady_clock::time_point time_StartLMTrack = std::chrono::steady_clock::now();
 #endif
         // If we have an initial estimation of the camera pose and matching. Track the local map.
-        if(!mbOnlyTracking)
+        if(!mbOnlyTracking)//定位加跟踪
         {
             if(bOK)
             {
-                bOK = TrackLocalMap();
+                bOK = TrackLocalMap();//跟踪局部地图
 
             }
             if(!bOK)
@@ -2015,7 +2015,7 @@ void Tracking::Track()
 
             if(mCurrentFrame.mnId>mnLastRelocFrameId+mMaxFrames)
             {
-                mTimeStampLost = mCurrentFrame.mTimeStamp;
+                mTimeStampLost = mCurrentFrame.mTimeStamp;//迭代丢失时间戳
             }
         }
 
@@ -2064,7 +2064,7 @@ void Tracking::Track()
                 cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
                 mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
                 mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
-                mVelocity = mCurrentFrame.mTcw*LastTwc;
+                mVelocity = mCurrentFrame.mTcw*LastTwc;//更新运动模型的线速度和角速度，用矩阵形式表示
             }
             else
                 mVelocity = cv::Mat();
@@ -3835,14 +3835,15 @@ void Tracking::UpdateFrameIMU(const float s, const IMU::Bias &b, KeyFrame* pCurr
     unsigned int index = mnFirstFrameId;
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mlpReferences.begin();
     list<bool>::iterator lbL = mlbLost.begin();
+    //预积分时帧间的相对变化，更新尺度
     for(list<cv::Mat>::iterator lit=mlRelativeFramePoses.begin(),lend=mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lbL++)
     {
-        if(*lbL)
+        if(*lbL)//lost时继续下一次循环
             continue;
 
         KeyFrame* pKF = *lRit;
 
-        while(pKF->isBad())
+        while(pKF->isBad())//当前关键帧如果有问题，则更新为父关键帧
         {
             pKF = pKF->GetParent();
         }
@@ -3852,7 +3853,7 @@ void Tracking::UpdateFrameIMU(const float s, const IMU::Bias &b, KeyFrame* pCurr
             (*lit).rowRange(0,3).col(3)=(*lit).rowRange(0,3).col(3)*s;
         }
     }
-
+    //更新bias
     mLastBias = b;
 
     mpLastKeyFrame = pCurrentKeyFrame;
@@ -3872,7 +3873,7 @@ void Tracking::UpdateFrameIMU(const float s, const IMU::Bias &b, KeyFrame* pCurr
         usleep(500);
     }
 
-
+    //上边更新了bias和尺度所以下面也要更新
     if(mLastFrame.mnId == mLastFrame.mpLastKeyFrame->mnFrameId)
     {
         mLastFrame.SetImuPoseVelocity(mLastFrame.mpLastKeyFrame->GetImuRotation(),

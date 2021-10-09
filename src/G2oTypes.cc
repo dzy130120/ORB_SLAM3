@@ -596,31 +596,35 @@ void EdgeInertial::linearizeOplus()
     _jacobianOplus[5].block<3,3>(3,0) = Rbw1; // OK
 }
 
-EdgeInertialGS::EdgeInertialGS(IMU::Preintegrated *pInt):JRg(Converter::toMatrix3d(pInt->JRg)),
-    JVg(Converter::toMatrix3d(pInt->JVg)), JPg(Converter::toMatrix3d(pInt->JPg)), JVa(Converter::toMatrix3d(pInt->JVa)),
-    JPa(Converter::toMatrix3d(pInt->JPa)), mpInt(pInt), dt(pInt->dT)
+EdgeInertialGS::EdgeInertialGS(IMU::Preintegrated *pInt):
+    JRg(Converter::toMatrix3d(pInt->JRg)),
+    JVg(Converter::toMatrix3d(pInt->JVg)), 
+    JPg(Converter::toMatrix3d(pInt->JPg)), 
+    JVa(Converter::toMatrix3d(pInt->JVa)),
+    JPa(Converter::toMatrix3d(pInt->JPa)), 
+    mpInt(pInt), dt(pInt->dT)
 {
     // This edge links 8 vertices
     resize(8);
-    gI << 0, 0, -IMU::GRAVITY_VALUE;
-    cv::Mat cvInfo = pInt->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
+    gI << 0, 0, -IMU::GRAVITY_VALUE;//重力向下所以是-9.8
+    cv::Mat cvInfo = pInt->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);//协方差矩阵求逆，构造信息矩阵
     Matrix9d Info;
     for(int r=0;r<9;r++)
         for(int c=0;c<9;c++)
             Info(r,c)=cvInfo.at<float>(r,c);
-    Info = (Info+Info.transpose())/2;
+    Info = (Info+Info.transpose())/2;//为什么相加再除2?
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,9,9> > es(Info);
      Eigen::Matrix<double,9,1> eigs = es.eigenvalues();
      for(int i=0;i<9;i++)
          if(eigs[i]<1e-12)
              eigs[i]=0;
-    Info = es.eigenvectors()*eigs.asDiagonal()*es.eigenvectors().transpose();
+    Info = es.eigenvectors()*eigs.asDiagonal()*es.eigenvectors().transpose();//a*lamda*aT
     setInformation(Info);
 }
 
 
 
-void EdgeInertialGS::computeError()
+void EdgeInertialGS::computeError()//计算9维误差
 {
     // TODO Maybe Reintegrate inertial measurments when difference between linearization point and current estimate is too big
     const VertexPose* VP1 = static_cast<const VertexPose*>(_vertices[0]);
@@ -632,20 +636,20 @@ void EdgeInertialGS::computeError()
     const VertexGDir* VGDir = static_cast<const VertexGDir*>(_vertices[6]);
     const VertexScale* VS = static_cast<const VertexScale*>(_vertices[7]);
     const IMU::Bias b(VA->estimate()[0],VA->estimate()[1],VA->estimate()[2],VG->estimate()[0],VG->estimate()[1],VG->estimate()[2]);
-    g = VGDir->estimate().Rwg*gI;
+    g = VGDir->estimate().Rwg*gI;//转换到载体系
     const double s = VS->estimate();
     const Eigen::Matrix3d dR = Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
     const Eigen::Vector3d dV = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
     const Eigen::Vector3d dP = Converter::toVector3d(mpInt->GetDeltaPosition(b));
 
-    const Eigen::Vector3d er = LogSO3(dR.transpose()*VP1->estimate().Rwb.transpose()*VP2->estimate().Rwb);
+    const Eigen::Vector3d er = LogSO3(dR.transpose()*VP1->estimate().Rwb.transpose()*VP2->estimate().Rwb);//两个关键帧的姿态求变化量，再与预积分的姿态量化量求差，旋转不涉及尺度和重力系
     const Eigen::Vector3d ev = VP1->estimate().Rwb.transpose()*(s*(VV2->estimate() - VV1->estimate()) - g*dt) - dV;
     const Eigen::Vector3d ep = VP1->estimate().Rwb.transpose()*(s*(VP2->estimate().twb - VP1->estimate().twb - VV1->estimate()*dt) - g*dt*dt/2) - dP;
 
     _error << er, ev, ep;
 }
 
-void EdgeInertialGS::linearizeOplus()
+void EdgeInertialGS::linearizeOplus()//线性化计算雅克比
 {
     const VertexPose* VP1 = static_cast<const VertexPose*>(_vertices[0]);
     const VertexVelocity* VV1= static_cast<const VertexVelocity*>(_vertices[1]);
@@ -680,8 +684,7 @@ void EdgeInertialGS::linearizeOplus()
      // rotation
     _jacobianOplus[0].block<3,3>(0,0) = -invJr*Rwb2.transpose()*Rwb1;
     _jacobianOplus[0].block<3,3>(3,0) = Skew(Rbw1*(s*(VV2->estimate() - VV1->estimate()) - g*dt));
-    _jacobianOplus[0].block<3,3>(6,0) = Skew(Rbw1*(s*(VP2->estimate().twb - VP1->estimate().twb
-                                                   - VV1->estimate()*dt) - 0.5*g*dt*dt));
+    _jacobianOplus[0].block<3,3>(6,0) = Skew(Rbw1*(s*(VP2->estimate().twb - VP1->estimate().twb - VV1->estimate()*dt) - 0.5*g*dt*dt));
     // translation
     _jacobianOplus[0].block<3,3>(6,3) = -s*Eigen::Matrix3d::Identity();
 

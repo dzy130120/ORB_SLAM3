@@ -260,7 +260,7 @@ public:
 
     void Update(const double *pu)
     {
-        Rwg=Rwg*ExpSO3(pu[0],pu[1],0.0);
+        Rwg=Rwg*ExpSO3(pu[0],pu[1],0.0);//为什么z轴不更新
     }
 
     Eigen::Matrix3d Rwg, Rgw;
@@ -542,7 +542,7 @@ public:
 
 
 // Edge inertial whre gravity is included as optimizable variable and it is not supposed to be pointing in -z axis, as well as scale
-class EdgeInertialGS : public g2o::BaseMultiEdge<9,Vector9d>
+class EdgeInertialGS : public g2o::BaseMultiEdge<9,Vector9d> //Q,V,P
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

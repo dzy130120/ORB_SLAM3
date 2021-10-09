@@ -5191,8 +5191,8 @@ void Optimizer::InertialOptimization(vector<KeyFrame*> vpKFs, Eigen::Vector3d &b
 void Optimizer::InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &scale)
 {
     int its = 10;
-    long unsigned int maxKFid = pMap->GetMaxKFid();
-    const vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
+    long unsigned int maxKFid = pMap->GetMaxKFid();//获取最大的关键帧ID
+    const vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();//获取地图中所有关键帧
 
     // Setup optimizer
     g2o::SparseOptimizer optimizer;
@@ -5206,26 +5206,30 @@ void Optimizer::InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &sc
     optimizer.setAlgorithm(solver);
 
     // Set KeyFrame vertices (all variables are fixed)
+    //关键帧作为顶点，顶点存储顺序是，顶点pose，顶点速度，顶点陀螺bias，顶点加计bias
     for(size_t i=0; i<vpKFs.size(); i++)
     {
         KeyFrame* pKFi = vpKFs[i];
         if(pKFi->mnId>maxKFid)
             continue;
+        //关键帧pose顶点
         VertexPose * VP = new VertexPose(pKFi);
         VP->setId(pKFi->mnId);
         VP->setFixed(true);
         optimizer.addVertex(VP);
-
+        //关键帧速度也是顶点
         VertexVelocity* VV = new VertexVelocity(pKFi);
         VV->setId(maxKFid+1+(pKFi->mnId));
         VV->setFixed(true);
         optimizer.addVertex(VV);
 
         // Vertex of fixed biases
+        //关键帧处的陀螺bias
         VertexGyroBias* VG = new VertexGyroBias(vpKFs.front());
         VG->setId(2*(maxKFid+1)+(pKFi->mnId));
         VG->setFixed(true);
         optimizer.addVertex(VG);
+        //关键帧处加计bias
         VertexAccBias* VA = new VertexAccBias(vpKFs.front());
         VA->setId(3*(maxKFid+1)+(pKFi->mnId));
         VA->setFixed(true);
@@ -5233,10 +5237,12 @@ void Optimizer::InertialOptimization(Map *pMap, Eigen::Matrix3d &Rwg, double &sc
     }
 
     // Gravity and scale
+    //重力方向最为顶点
     VertexGDir* VGDir = new VertexGDir(Rwg);
     VGDir->setId(4*(maxKFid+1));
     VGDir->setFixed(false);
     optimizer.addVertex(VGDir);
+    //尺度因子作为顶点
     VertexScale* VS = new VertexScale(scale);
     VS->setId(4*(maxKFid+1)+1);
     VS->setFixed(false);

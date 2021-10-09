@@ -300,7 +300,7 @@ void Map::ApplyScaledRotation(const cv::Mat &R, const float s, const bool bScale
     Tyw.rowRange(0,3).col(3) = Tyw.rowRange(0,3).col(3)+t;
     cv::Mat Ryw = Tyw.rowRange(0,3).colRange(0,3);
     cv::Mat tyw = Tyw.rowRange(0,3).col(3);
-
+    //更新关键帧
     for(set<KeyFrame*>::iterator sit=mspKeyFrames.begin(); sit!=mspKeyFrames.end(); sit++)
     {
         KeyFrame* pKF = *sit;
@@ -318,6 +318,7 @@ void Map::ApplyScaledRotation(const cv::Mat &R, const float s, const bool bScale
             pKF->SetVelocity(Ryw*Vw*s);
 
     }
+    //更新地图点
     for(set<MapPoint*>::iterator sit=mspMapPoints.begin(); sit!=mspMapPoints.end(); sit++)
     {
         MapPoint* pMP = *sit;
