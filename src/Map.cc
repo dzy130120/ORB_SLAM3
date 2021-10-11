@@ -29,7 +29,7 @@ long unsigned int Map::nNextId=0;
 Map::Map():mnMaxKFid(0),mnBigChangeIdx(0), mbImuInitialized(false), mnMapChange(0), mpFirstRegionKF(static_cast<KeyFrame*>(NULL)),
 mbFail(false), mIsInUse(false), mHasTumbnail(false), mbBad(false), mnMapChangeNotified(0), mbIsInertial(false), mbIMU_BA1(false), mbIMU_BA2(false)
 {
-    mnId=nNextId++;
+    mnId=nNextId++;//先赋值再加加，所以mnid从0开始
     mThumbnail = static_cast<GLubyte*>(NULL);
 }
 
@@ -141,7 +141,7 @@ void Map::InformNewBigChange()
 int Map::GetLastBigChangeIdx()
 {
     unique_lock<mutex> lock(mMutexMap);
-    return mnBigChangeIdx;
+    return mnBigChangeIdx;//回环或者全局优化，再或者是初始化的ID
 }
 
 vector<KeyFrame*> Map::GetAllKeyFrames()
@@ -201,12 +201,12 @@ KeyFrame* Map::GetOriginKF()
     return mpKFinitial;
 }
 
-void Map::SetCurrentMap()
+void Map::SetCurrentMap()//当前活跃的地图
 {
     mIsInUse = true;
 }
 
-void Map::SetStoredMap()
+void Map::SetStoredMap()//与上边对应，缓存的地图，不是当前使用的
 {
     mIsInUse = false;
 }
@@ -387,7 +387,8 @@ void Map::PrintEssentialGraph()
     set<KeyFrame*> spChilds = pFirstKF->GetChilds();
     vector<KeyFrame*> vpChilds;
     vector<string> vstrHeader;
-    for(KeyFrame* pKFi : spChilds){
+    for(KeyFrame* pKFi : spChilds)
+    {
         vstrHeader.push_back("--");
         vpChilds.push_back(pKFi);
     }

@@ -105,7 +105,7 @@ public:
 
     unsigned int GetLowerKFID();
 
-    vector<KeyFrame*> mvpKeyFrameOrigins;
+    vector<KeyFrame*> mvpKeyFrameOrigins;//关键帧原点是啥?
     vector<unsigned long int> mvBackupKeyFrameOriginsId;
     KeyFrame* mpFirstRegionKF;
     std::mutex mMutexMapUpdate;
@@ -123,15 +123,15 @@ public:
 
 protected:
 
-    long unsigned int mnId;
+    long unsigned int mnId;//地图id
 
-    std::set<MapPoint*> mspMapPoints;
-    std::set<KeyFrame*> mspKeyFrames;
+    std::set<MapPoint*> mspMapPoints;//地图点
+    std::set<KeyFrame*> mspKeyFrames;//地图包含的关键帧
 
     KeyFrame* mpKFinitial;
-    KeyFrame* mpKFlowerID;
+    KeyFrame* mpKFlowerID;//这个变量是个啥?
 
-    std::vector<MapPoint*> mvpReferenceMapPoints;
+    std::vector<MapPoint*> mvpReferenceMapPoints;//地图中的参考点集
 
     bool mbImuInitialized;
 
@@ -142,7 +142,7 @@ protected:
     long unsigned int mnMaxKFid;
     long unsigned int mnLastLoopKFid;
 
-    // Index related to a big change in the map (loop closure, global BA)
+    // Index related to a big change in the map (loop closure, global BA)//相对于回环或全局优化地图中大规模变化的索引
     int mnBigChangeIdx;
 
 
